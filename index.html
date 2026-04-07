@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Botanical Knowledge — MIRÓ Labs</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.4/p5.min.js"></script>
+<script>
+new p5(function(p) {
+
+  // ═══════════════════════════════════════
+  // DATA
+  // ═══════════════════════════════════════
+
+  const GENRES = [
+    {
+      id: 'jazz', label: 'JAZZ',
+      xFrac: 0.28, yFrac: 0.30,
+      swayAmp: 10, swayFreq: 0.007, swayPhase: 1.2,
+      color: [255, 60, 165], type: 'umbel', nodeShape: 'circle',
+      depth: 1.0,
+      albums: [
+        { artist: 'Miles Davis',    title: 'Bitches Brew',       year: 1970 },
+        { artist: 'Coltrane',       title: 'My Favorite Things', year: 1961 },
+        { artist: 'Herbie Hancock', title: 'Head Hunters',       year: 1973 },
+        { artist: 'Mingus',         title: 'Mingus Ah Um',       year: 1959 },
+        { artist: 'Brubeck',        title: 'Time Out',           year: 1959 },
+        { artist: 'J Dilla',        title: 'Donuts',             year: 2006 },
+        { artist: 'Sarah Vaughan',  title: "You're Mine You!",   year: 1962 },
+        { artist: 'Chick Corea',    title: 'The Leprechaun',     year: 1976 },
+        { artist: 'Jean-Luc Ponty', title: 'Civilized Evil',     year: 1980 },
+      ]
+    },
+    {
+      id: 'classical', label: 'CLASSICAL',
+      xFrac: 0.10, yFrac: 0.84,
+      swayAmp: 3, swayFreq: 0.009, swayPhase: 0.0,
+      color: [210, 225, 255], type: 'spike', nodeShape: 'circle',
+      depth: 0.72,
+      albums: [
+        { artist: 'Bach',        title: 'Brandenburg Concertos', year: 1950 },
+        { artist: 'Tchaikovsky', title: 'Violin Concerto',       year: 1959 },
+        { artist: 'Brahms',      title: 'Piano Concerto No. 2',  year: 1967 },
+      ]
+    },
+    {
+      id: 'hiphop', label: 'HIP-HOP',
+      xFrac: 0.22, yFrac: 0.62,
+      swayAmp: 5, swayFreq: 0.013, swayPhase: 2.5,
+      color: [255, 195, 15], type: 'spike', nodeShape: 'stack',
+      depth: 0.78,
+      albums: [
+        { artist: 'Wu-Tang Clan', title: '36 Chambers',            year: 1993 },
+        { artist: 'N.W.A',        title: 'Straight Outta Compton', year: 1988 },
+      ]
+    },
+    {
+      id: 'rock', label: 'CLASSIC ROCK',
+      xFrac: 0.48, yFrac: 0.68,
+      swayAmp: 5, swayFreq: 0.008, swayPhase: 0.7,
+      color: [255, 145, 25], type: 'panicle', nodeShape: 'stack',
+      depth: 1.0,
+      albums: [
+        { artist: 'The Beatles',    title: 'Abbey Road',      year: 1969 },
+        { artist: 'Led Zeppelin',   title: 'Led Zeppelin IV', year: 1971 },
+        { artist: 'Bob Dylan',      title: 'Greatest Hits',   year: 1967 },
+        { artist: 'The Beach Boys', title: 'Pet Sounds',      year: 1966 },
+        { artist: 'Deep Purple',    title: 'Made in Japan',   year: 1972 },
+        { artist: 'David Bowie',    title: 'Hunky Dory',      year: 1971 },
+        { artist: 'Elton John',     title: 'Greatest Hits',   year: 1974 },
+        { artist: 'M. Jackson',     title: 'Thriller',        year: 1982 },
+        { artist: 'M. Jackson',     title: 'Off the Wall',    year: 1979 },
+        { artist: 'Patti Smith',    title: 'Horses',          year: 1975 },
+        { artist: 'Eric Clapton',   title: 'History of...',   year: 1972 },
+      ]
+    },
+    {
+      id: 'prog', label: 'PROG ROCK',
+      xFrac: 0.53, yFrac: 0.88,
+      swayAmp: 4, swayFreq: 0.010, swayPhase: 1.8,
+      color: [155, 65, 255], type: 'thyrse', nodeShape: 'diamond',
+      depth: 0.92,
+      albums: [
+        { artist: 'Genesis',      title: 'Foxtrot',               year: 1972 },
+        { artist: 'Genesis',      title: 'Wind & Wuthering',      year: 1976 },
+        { artist: 'Genesis',      title: 'Invisible Touch',       year: 1986 },
+        { artist: 'Genesis',      title: '...And Then Three',     year: 1978 },
+        { artist: 'King Crimson', title: 'In the Court...',       year: 1969 },
+        { artist: 'Rush',         title: 'Moving Pictures',       year: 1981 },
+        { artist: 'Rush',         title: 'Permanent Waves',       year: 1980 },
+        { artist: 'Rush',         title: 'Signals',               year: 1982 },
+        { artist: 'Jethro Tull',  title: 'Living in the Past',    year: 1972 },
+        { artist: 'Pink Floyd',   title: 'Dark Side of the Moon', year: 1973 },
+        { artist: 'Pink Floyd',   title: 'Echoes',                year: 2001 },
+        { artist: 'Iron Maiden',  title: 'Number of the Beast',   year: 1982 },
+      ]
+    },
+    {
+      id: 'electronic', label: 'ELECTRONIC',
+      xFrac: 0.74, yFrac: 0.48,
+      swayAmp: 7, swayFreq: 0.011, swayPhase: 3.1,
+      color: [220, 232, 255], type: 'thyrse', nodeShape: 'stack',
+      depth: 0.72,
+      albums: [
+        { artist: 'Aphex Twin',        title: 'Selected Ambient Works',    year: 1992 },
+        { artist: 'Com Truise',        title: 'In Decay, Too',             year: 2020 },
+        { artist: 'Eno & Byrne',       title: 'My Life in Bush of Ghosts', year: 1981 },
+        { artist: 'Mort Garson',       title: "Mother Earth's Plantasia",  year: 1976 },
+        { artist: 'Animal Collective', title: 'Merriweather Post Pav.',    year: 2009 },
+      ]
+    },
+    {
+      id: 'postpunk', label: 'POST-PUNK / ALT',
+      xFrac: 0.86, yFrac: 0.78,
+      swayAmp: 6, swayFreq: 0.009, swayPhase: 2.0,
+      color: [180, 75, 255], type: 'raceme', nodeShape: 'diamond',
+      depth: 0.88,
+      albums: [
+        { artist: 'Joy Division',           title: 'Closer',             year: 1980 },
+        { artist: 'Joy Division',           title: 'Unknown Pleasures',  year: 1979 },
+        { artist: 'Pixies',                 title: 'Doolittle',          year: 1989 },
+        { artist: 'Pixies',                 title: 'Surfer Rosa',        year: 1988 },
+        { artist: 'The Smiths',             title: 'Strangeways',        year: 1987 },
+        { artist: 'The Velvet Underground', title: 'Another View',       year: 1986 },
+        { artist: 'Dinosaur Jr.',           title: "You're Living...",   year: 1987 },
+        { artist: 'Spiritualized',          title: 'Ladies & Gentlemen', year: 1997 },
+        { artist: 'King Gizzard',           title: 'Butterfly 3000',     year: 2021 },
+        { artist: 'Girls',                  title: 'Album',              year: 2009 },
+        { artist: 'Yuck',                   title: 'Yuck',               year: 2011 },
+        { artist: 'Soda Stereo',            title: 'Signos',             year: 1986 },
+      ]
+    },
+  ];
+
+  // 10 connections — each carries an activeT for live glow
+  const CONNECTIONS = [
+    { from: 'jazz',       fi: 0, to: 'rock',       ti: 0,  activeT: 0 },
+    { from: 'jazz',       fi: 5, to: 'electronic',  ti: 0,  activeT: 0 },
+    { from: 'jazz',       fi: 2, to: 'classical',   ti: 0,  activeT: 0 },
+    { from: 'jazz',       fi: 0, to: 'hiphop',      ti: 0,  activeT: 0 },
+    { from: 'rock',       fi: 9, to: 'postpunk',    ti: 0,  activeT: 0 },
+    { from: 'rock',       fi: 1, to: 'prog',        ti: 0,  activeT: 0 },
+    { from: 'rock',       fi: 7, to: 'hiphop',      ti: 0,  activeT: 0 },
+    { from: 'prog',       fi: 4, to: 'electronic',  ti: 0,  activeT: 0 },
+    { from: 'postpunk',   fi: 0, to: 'prog',        ti: 5,  activeT: 0 },
+    { from: 'electronic', fi: 4, to: 'postpunk',    ti: 8,  activeT: 0 },
+  ];
+
+  // ═══════════════════════════════════════
+  // STATE
+  // ═══════════════════════════════════════
+
+  let plantData     = {};
+  let particles     = [];
+  let floatingDots  = [];
+  let pollenShots   = [];
+  let pollenBursts  = [];
+  let infoCards     = [];
+  let dashOffset    = 0;
+  let tick          = 0;
+  let W, H;
+  let nextPulse     = 280;
+  let pulseBoosters = {};   // genreId → 0..1
+
+  const BRANCH_DUR  = 22;
+  const NODE_DUR    = 14;
+  const PLANT_GAP   = 16;
+  const GLITCH      = '!<>-_\\/[]{}=+*^?#|~$%@;:.';
+  const CARD_FADE   = 35;
+  const CARD_HOLD   = 220;
+  const CARD_SPAWN  = 160;
+
+  // ═══════════════════════════════════════
+  // SETUP
+  // ═══════════════════════════════════════
+
+  p.setup = function() {
+    p.createCanvas(p.windowWidth, p.windowHeight);
+    p.textFont('Courier New');
+    p.frameRate(60);
+    W = p.width; H = p.height;
+    for (const g of GENRES) pulseBoosters[g.id] = 0;
+    initParticles();
+    initFloatingDots();
+    buildLayout();
+  };
+
+  function initParticles() {
+    particles = [];
+    for (let i = 0; i < 220; i++) {
+      const angle = p.random(p.TWO_PI);
+      const speed = p.random(0.04, 0.40);
+      particles.push({
+        x: p.random(W), y: p.random(H),
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        rot:   p.random(p.TWO_PI),
+        size:  p.random(1.5, 4.5),
+        alpha: p.random(14, 50),
+        layer: p.random() < 0.3 ? 0 : 1   // 0=background, 1=foreground
+      });
+    }
+  }
+
+  function initFloatingDots() {
+    floatingDots = [];
+    for (let i = 0; i < 24; i++) {
+      const g = GENRES[i % GENRES.length];
+      floatingDots.push({
+        x: p.random(W * 0.08, W * 0.92), y: p.random(H * 0.05, H * 0.88),
+        vx: p.random(-0.2, 0.2), vy: p.random(-0.15, 0.15),
+        col: g.color, size: p.random(3.5, 7), alpha: p.random(100, 185)
+      });
+    }
+  }
+
+  function buildLayout() {
+    let cursor = 0;
+    for (const g of GENRES) {
+      g.px = g.xFrac * W;
+      g.py = g.yFrac * H;
+      plantData[g.id] = calcPlant(g);
+      const pd = plantData[g.id];
+      pd.branches.forEach((b, j) => { b.startF = cursor + j * 4; b.prog = 0; });
+      pd.nodes.forEach((n, j) => {
+        n.startF = cursor + j * 4 + BRANCH_DUR + 4;
+        n.prog = 0; n.idx = j; n.x = n.x0; n.y = n.y0;
+      });
+      cursor += pd.branches.length * 4 + PLANT_GAP;
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // LAYOUT CALCULATIONS
+  // ═══════════════════════════════════════
+
+  function calcPlant(g) {
+    const r = { branches: [], nodes: [] };
+    switch (g.type) {
+      case 'spike':   calcSpike(g, r);   break;
+      case 'umbel':   calcUmbel(g, r);   break;
+      case 'raceme':  calcRaceme(g, r);  break;
+      case 'panicle': calcPanicle(g, r); break;
+      case 'thyrse':  calcThyrse(g, r);  break;
+    }
+    return r;
+  }
+
+  function B(r, x1, y1, x2, y2, w) { r.branches.push({ x1, y1, x2, y2, x10: x1, y10: y1, x20: x2, y20: y2, w: w || 0.8, prog: 0, startF: 0 }); }
+  function N(r, x, y, album, size)  { r.nodes.push({ x0: x, y0: y, x, y, album, size: size || 4, prog: 0, startF: 0, idx: 0 }); }
+
+  function calcSpike(g, r) {
+    const n = g.albums.length, h = 40 + n * 30, x = g.px, base = g.py, top = base - h;
+    B(r, x, base, x, top, 1);
+    for (let i = 0; i < n; i++) {
+      const y = top + (h / (n + 1)) * (n - i), s = (i % 2 === 0) ? 11 : -11;
+      B(r, x, y, x + s, y, 0.6); N(r, x + s, y, g.albums[i], 3.5);
+    }
+  }
+
+  function calcUmbel(g, r) {
+    const x = g.px, base = g.py, hubY = base - 110, bLen = 55, spread = p.PI * 0.85, n = g.albums.length;
+    B(r, x, base, x, hubY, 1);
+    for (let i = 0; i < n; i++) {
+      const a = -p.PI / 2 - spread / 2 + (spread / (n - 1)) * i;
+      B(r, x, hubY, x + Math.cos(a) * bLen, hubY + Math.sin(a) * bLen, 0.65);
+      N(r, x + Math.cos(a) * bLen, hubY + Math.sin(a) * bLen, g.albums[i], 4);
+    }
+    N(r, x, hubY, null, 5.5);
+  }
+
+  function calcRaceme(g, r) {
+    const n = g.albums.length, rows = Math.ceil(n / 2), h = rows * 38 + 40;
+    const base = g.py, top = base - h, x = g.px, sp = h / (rows + 1);
+    B(r, x, base, x, top, 1);
+    for (let i = 0; i < n; i++) {
+      const side = (i % 2 === 0) ? 30 : -30, y = base - sp * (Math.floor(i / 2) + 1);
+      B(r, x, y, x + side, y, 0.6); N(r, x + side, y, g.albums[i], 4);
+    }
+  }
+
+  function calcPanicle(g, r) {
+    const x = g.px, base = g.py;
+    B(r, x, base, x, base - 65, 1.2);
+    let ai = 0;
+    function branch(cx, cy, depth) {
+      if (depth > 4 || ai >= g.albums.length) return;
+      const bLen = 62 - depth * 15, spread = p.PI / 4.5 + depth * p.PI / 20;
+      const la = -p.PI / 2 - spread, ra = -p.PI / 2 + spread;
+      const lx = cx + Math.cos(la) * bLen, ly = cy + Math.sin(la) * bLen;
+      const rx = cx + Math.cos(ra) * bLen, ry = cy + Math.sin(ra) * bLen;
+      B(r, cx, cy, lx, ly, 1 - depth * 0.17);
+      if (ai < g.albums.length) N(r, lx, ly, g.albums[ai++], 4.5 - depth * 0.65);
+      B(r, cx, cy, rx, ry, 1 - depth * 0.17);
+      if (ai < g.albums.length) N(r, rx, ry, g.albums[ai++], 4.5 - depth * 0.65);
+      if (ai < g.albums.length) {
+        const up = 44 - depth * 10;
+        B(r, cx, cy, cx, cy - up, 1 - depth * 0.12);
+        branch(cx, cy - up, depth + 1);
+      }
+    }
+    branch(x, base - 65, 0);
+  }
+
+  function calcThyrse(g, r) {
+    const x = g.px, base = g.py, h = 250, top = base - h;
+    const nGroups = Math.ceil(g.albums.length / 3), sp = h / (nGroups + 1);
+    B(r, x, base, x, top, 1);
+    let ai = 0;
+    for (let i = 0; i < nGroups && ai < g.albums.length; i++) {
+      const y = base - sp * (i + 1), side = (i % 2 === 0) ? 1 : -1, bx = x + side * 24;
+      B(r, x, y, bx, y, 0.65);
+      const cymN = Math.min(3, g.albums.length - ai);
+      for (let j = 0; j < cymN; j++) {
+        const a = -p.PI / 2 + (j - (cymN - 1) / 2) * 0.48;
+        B(r, bx, y, bx + Math.cos(a) * 18, y + Math.sin(a) * 18, 0.45);
+        N(r, bx + Math.cos(a) * 18, y + Math.sin(a) * 18, g.albums[ai++], 3.5);
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // MAIN LOOP
+  // ═══════════════════════════════════════
+
+  p.draw = function() {
+    p.background(0);
+    tick++;
+    dashOffset -= 0.35;
+
+    updateProgress();
+    applySway();
+    updateParticles();
+    updateFloatingDots();
+    updatePollenShots();
+    updatePollenBursts();
+    updateInfoCards();
+    updatePulses();
+    updateConnectionsActiveT();
+
+    drawParticles(0);      // background layer — behind plants
+    drawFloatingDots();
+    drawConnections();
+    drawBranches();
+    drawNodes();
+    drawPollenShots();
+    drawPollenBursts();
+    drawParticles(1);      // foreground layer — in front of plants
+    drawInfoCards();
+    drawLabels();
+    drawTitle();
+  };
+
+  // ═══════════════════════════════════════
+  // SWAY — primary + secondary drift
+  // ═══════════════════════════════════════
+
+  function applySway() {
+    const MAX_H = 280;
+    for (const g of GENRES) {
+      const pd = plantData[g.id];
+      // Primary sway scaled by depth (far plants move less)
+      const s  = g.swayAmp * Math.sin(tick * g.swayFreq + g.swayPhase) * g.depth;
+      // Secondary slow drift adds organic layering
+      const s2 = g.swayAmp * 0.28 * Math.sin(tick * g.swayFreq * 0.37 + g.swayPhase + 1.1) * g.depth;
+      for (const b of pd.branches) {
+        b.x1 = b.x10 + s * (Math.max(0, g.py - b.y10) / MAX_H);
+        b.x2 = b.x20 + s * (Math.max(0, g.py - b.y20) / MAX_H);
+      }
+      for (const n of pd.nodes) {
+        n.x = n.x0 + s * (Math.max(0, g.py - n.y0) / MAX_H);
+        n.y = n.y0
+          + Math.sin(tick * 0.018 + n.idx * 0.55 + g.swayPhase) * 1.8
+          + s2 * (Math.max(0, g.py - n.y0) / MAX_H) * 0.5;
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // PROGRESS
+  // ═══════════════════════════════════════
+
+  function ease(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
+
+  function updateProgress() {
+    for (const g of GENRES) {
+      for (const b of plantData[g.id].branches)
+        b.prog = ease(Math.min(1, Math.max(0, (tick - b.startF) / BRANCH_DUR)));
+      for (const n of plantData[g.id].nodes)
+        n.prog = ease(Math.min(1, Math.max(0, (tick - n.startF) / NODE_DUR)));
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // PULSES — irregular rhythmic activation
+  // ═══════════════════════════════════════
+
+  function updatePulses() {
+    for (const g of GENRES) {
+      if (pulseBoosters[g.id] > 0)
+        pulseBoosters[g.id] = Math.max(0, pulseBoosters[g.id] - 0.016);
+    }
+    if (tick >= nextPulse) {
+      const g = GENRES[Math.floor(p.random(GENRES.length))];
+      pulseBoosters[g.id] = 1.0;
+      nextPulse = tick + 280 + Math.floor(p.random(160));
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // CONNECTION ACTIVE T — live glow decay
+  // ═══════════════════════════════════════
+
+  function updateConnectionsActiveT() {
+    for (const c of CONNECTIONS) {
+      if (c.activeT > 0) c.activeT = Math.max(0, c.activeT - 0.022);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // PARTICLES — two depth layers
+  // ═══════════════════════════════════════
+
+  function updateParticles() {
+    for (const pt of particles) {
+      pt.x += pt.vx; pt.y += pt.vy;
+      if (pt.x < -10) pt.x = W + 10; if (pt.x > W + 10) pt.x = -10;
+      if (pt.y < -10) pt.y = H + 10; if (pt.y > H + 10) pt.y = -10;
+    }
+  }
+
+  function drawParticles(layer) {
+    p.drawingContext.shadowBlur = 0;
+    p.noStroke();
+    for (const pt of particles) {
+      if (pt.layer !== layer) continue;
+      const alphaScale = layer === 0 ? 0.5 : 1.0;
+      p.push(); p.translate(pt.x, pt.y); p.rotate(pt.rot + tick * 0.002);
+      p.fill(255, 255, 255, pt.alpha * alphaScale);
+      p.triangle(pt.size, 0, -pt.size * 0.55, -pt.size * 0.5, -pt.size * 0.55, pt.size * 0.5);
+      p.pop();
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // FLOATING DOTS
+  // ═══════════════════════════════════════
+
+  function updateFloatingDots() {
+    for (const d of floatingDots) {
+      d.x += d.vx; d.y += d.vy;
+      if (d.x < -20) d.x = W + 20; if (d.x > W + 20) d.x = -20;
+      if (d.y < -20) d.y = H + 20; if (d.y > H + 20) d.y = -20;
+    }
+  }
+
+  function drawFloatingDots() {
+    p.drawingContext.shadowBlur = 0;
+    for (const d of floatingDots) {
+      const [r, g, b] = d.col;
+      p.noStroke();
+      p.fill(r, g, b, d.alpha * 0.12); p.circle(d.x, d.y, d.size * 2 + 12);
+      p.fill(r, g, b, d.alpha * 0.35); p.circle(d.x, d.y, d.size * 2 + 5);
+      p.fill(r, g, b, d.alpha);        p.circle(d.x, d.y, d.size * 2);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // POLLEN SHOTS — trail + burst + cascade
+  // ═══════════════════════════════════════
+
+  function updatePollenShots() {
+    if (tick % 65 === 0) spawnPollenShot(null);
+
+    const arrived = [];
+    pollenShots = pollenShots.filter(ps => {
+      ps.t += ps.speed;
+      // Charge the connection it travels
+      const conn = CONNECTIONS.find(c => c.from === ps.fromId && c.to === ps.toId);
+      if (conn) conn.activeT = Math.min(1, conn.activeT + 0.08);
+      if (ps.t >= 1.0) { arrived.push(ps); return false; }
+      return true;
+    });
+
+    for (const ps of arrived) {
+      spawnBurst(ps.tn.x, ps.tn.y, ps.col);
+      // Cascade: if destination genre is pulsing, spawn another shot from there
+      const tg = GENRES.find(g => g.id === ps.toId);
+      if (tg && pulseBoosters[tg.id] > 0.4 && p.random() < 0.5)
+        spawnPollenShot(ps.toId);
+    }
+  }
+
+  function spawnPollenShot(fromIdOverride) {
+    for (let i = 0; i < 8; i++) {
+      let c;
+      if (fromIdOverride) {
+        const candidates = CONNECTIONS.filter(cn => cn.from === fromIdOverride || cn.to === fromIdOverride);
+        if (!candidates.length) break;
+        c = candidates[Math.floor(p.random(candidates.length))];
+      } else {
+        c = CONNECTIONS[Math.floor(p.random(CONNECTIONS.length))];
+      }
+      const fd = plantData[c.from], td = plantData[c.to];
+      if (!fd || !td) continue;
+      const fa = fd.nodes.filter(n => n.album && n.prog > 0.5);
+      const ta = td.nodes.filter(n => n.album && n.prog > 0.5);
+      if (!fa.length || !ta.length) continue;
+      const fn = fa[Math.min(c.fi, fa.length - 1)], tn = ta[Math.min(c.ti, ta.length - 1)];
+      const fg = GENRES.find(g => g.id === c.from), tg = GENRES.find(g => g.id === c.to);
+      pollenShots.push({
+        fn, tn, t: 0, speed: 0.005 + p.random(0.01),
+        fromId: c.from, toId: c.to,
+        col: [
+          (fg.color[0] + tg.color[0]) / 2,
+          (fg.color[1] + tg.color[1]) / 2,
+          (fg.color[2] + tg.color[2]) / 2
+        ]
+      });
+      break;
+    }
+  }
+
+  function drawPollenShots() {
+    const TRAIL = 5;
+    p.drawingContext.shadowBlur = 0;
+    for (const ps of pollenShots) {
+      const { fn, tn, t, col: [r, g, b] } = ps;
+      const midY = (fn.y + tn.y) / 2 - 80;
+
+      for (let i = TRAIL; i >= 0; i--) {
+        const tt = Math.max(0, t - i * 0.018);
+        const bx = p.bezierPoint(fn.x, fn.x, tn.x, tn.x, tt);
+        const by = p.bezierPoint(fn.y, midY, midY, tn.y, tt);
+        const tAlpha = 1 - i / TRAIL;
+        const tSize  = 1 - i / (TRAIL * 1.5);
+
+        p.noStroke();
+        if (i === 0) {
+          // Bright core with glow
+          p.drawingContext.shadowBlur = 14;
+          p.drawingContext.shadowColor = `rgba(${r},${g},${b},0.9)`;
+          p.fill(r, g, b, 18 * tAlpha); p.circle(bx, by, 18 * tSize);
+          p.fill(r, g, b, 80 * tAlpha); p.circle(bx, by, 8  * tSize);
+          p.fill(r, g, b, 252);          p.circle(bx, by, 4  * tSize);
+          p.drawingContext.shadowBlur = 0;
+        } else {
+          // Trail fade
+          p.fill(r, g, b, 38  * tAlpha); p.circle(bx, by, 5   * tSize);
+          p.fill(r, g, b, 115 * tAlpha); p.circle(bx, by, 2.5 * tSize);
+        }
+      }
+    }
+    p.drawingContext.shadowBlur = 0;
+    p.drawingContext.shadowColor = 'transparent';
+  }
+
+  // ═══════════════════════════════════════
+  // POLLEN BURSTS — arrival micro-explosion
+  // ═══════════════════════════════════════
+
+  function spawnBurst(x, y, col) {
+    for (let i = 0; i < 7; i++) {
+      const angle = p.random(p.TWO_PI);
+      const speed = p.random(0.6, 2.5);
+      pollenBursts.push({
+        x, y, col,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.0, decay: p.random(0.04, 0.07)
+      });
+    }
+  }
+
+  function updatePollenBursts() {
+    pollenBursts = pollenBursts.filter(b => {
+      b.x += b.vx; b.y += b.vy;
+      b.vx *= 0.92; b.vy *= 0.92;
+      b.life -= b.decay;
+      return b.life > 0;
+    });
+  }
+
+  function drawPollenBursts() {
+    p.drawingContext.shadowBlur = 0;
+    for (const b of pollenBursts) {
+      const [r, g, bl] = b.col;
+      p.noStroke();
+      p.fill(r, g, bl, 200 * b.life); p.circle(b.x, b.y, 3 * b.life);
+      p.fill(r, g, bl,  80 * b.life); p.circle(b.x, b.y, 6 * b.life);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // CONNECTIONS — live glow when pollen travels
+  // ═══════════════════════════════════════
+
+  function drawConnections() {
+    p.noFill();
+    for (const c of CONNECTIONS) {
+      const fd = plantData[c.from], td = plantData[c.to];
+      if (!fd || !td) continue;
+      const fa = fd.nodes.filter(n => n.album), ta = td.nodes.filter(n => n.album);
+      if (!fa.length || !ta.length) continue;
+      const fn = fa[Math.min(c.fi, fa.length - 1)], tn = ta[Math.min(c.ti, ta.length - 1)];
+      if (fn.prog < 0.05 || tn.prog < 0.05) continue;
+
+      const a    = Math.min(fn.prog, tn.prog);
+      const fg   = GENRES.find(g => g.id === c.from), tg = GENRES.find(g => g.id === c.to);
+      const cr   = (fg.color[0] + tg.color[0]) / 2;
+      const cg   = (fg.color[1] + tg.color[1]) / 2;
+      const cb   = (fg.color[2] + tg.color[2]) / 2;
+      const midY = (fn.y + tn.y) / 2 - 80;
+      const boost = c.activeT;
+
+      // Glow when active
+      if (boost > 0) {
+        p.drawingContext.shadowBlur = 9 * boost;
+        p.drawingContext.shadowColor = `rgba(${cr},${cg},${cb},${boost})`;
+        p.stroke(cr, cg, cb, (75 + 130 * boost) * a);
+        p.strokeWeight(0.6 + 1.4 * boost);
+      } else {
+        p.drawingContext.shadowBlur = 0;
+        p.stroke(cr, cg, cb, 75 * a);
+        p.strokeWeight(0.6);
+      }
+
+      p.drawingContext.setLineDash([2, 7]);
+      p.drawingContext.lineDashOffset = dashOffset;
+      p.beginShape(); p.vertex(fn.x, fn.y);
+      p.bezierVertex(fn.x, midY, tn.x, midY, tn.x, tn.y); p.endShape();
+
+      p.drawingContext.setLineDash([]);
+      p.drawingContext.lineDashOffset = 0;
+      p.drawingContext.shadowBlur = 0;
+      p.strokeWeight(0.6);
+
+      for (let t = 0.2; t < 0.85; t += 0.33) {
+        const bx  = p.bezierPoint(fn.x, fn.x, tn.x, tn.x, t);
+        const by  = p.bezierPoint(fn.y, midY, midY, tn.y, t);
+        const bx2 = p.bezierPoint(fn.x, fn.x, tn.x, tn.x, t + 0.01);
+        const by2 = p.bezierPoint(fn.y, midY, midY, tn.y, t + 0.01);
+        p.push(); p.translate(bx, by); p.rotate(Math.atan2(by2 - by, bx2 - bx));
+        p.noStroke(); p.fill(cr, cg, cb, (75 + 80 * boost) * a);
+        p.triangle(4, 0, -2.5, -2, -2.5, 2); p.pop();
+      }
+    }
+    p.drawingContext.setLineDash([]);
+    p.drawingContext.lineDashOffset = 0;
+    p.drawingContext.shadowBlur = 0;
+  }
+
+  // ═══════════════════════════════════════
+  // BRANCHES — subtle color glow
+  // ═══════════════════════════════════════
+
+  function drawBranches() {
+    for (const g of GENRES) {
+      const [r, gr, b] = g.color;
+      const d = g.depth;
+      for (const branch of plantData[g.id].branches) {
+        if (branch.prog <= 0) continue;
+        const tx = branch.x1 + (branch.x2 - branch.x1) * branch.prog;
+        const ty = branch.y1 + (branch.y2 - branch.y1) * branch.prog;
+        p.drawingContext.shadowBlur  = 3 * d;
+        p.drawingContext.shadowColor = `rgba(${r},${gr},${b},0.3)`;
+        p.stroke(255, 255, 255, 205 * branch.prog * d);
+        p.strokeWeight(branch.w * d);
+        p.noFill();
+        p.line(branch.x1, branch.y1, tx, ty);
+      }
+    }
+    p.drawingContext.shadowBlur  = 0;
+    p.drawingContext.shadowColor = 'transparent';
+  }
+
+  // ═══════════════════════════════════════
+  // NODES — glow + pulse + depth + double breath
+  // ═══════════════════════════════════════
+
+  function drawNodes() {
+    for (const g of GENRES) {
+      const [r, gr, b] = g.color;
+      const d          = g.depth;
+      const pulseBoost = pulseBoosters[g.id] || 0;
+
+      for (const n of plantData[g.id].nodes) {
+        if (n.prog <= 0) continue;
+        const pr = n.prog;
+        let sc;
+        if (pr < 0.65)      sc = pr / 0.65;
+        else if (pr < 0.82) sc = 1 + (pr - 0.65) / 0.17 * 0.22;
+        else                sc = 1.22 - (pr - 0.82) / 0.18 * 0.22;
+
+        // Double-frequency breathing for organic feel
+        const breathe = 1
+          + Math.sin(tick * 0.022 + n.idx * 0.55) * 0.14
+          + Math.sin(tick * 0.009 + n.idx * 0.30) * 0.06;
+
+        const sz  = n.size * sc * breathe * d * (1 + pulseBoost * 0.35);
+        const a   = n.prog * d;
+        const gb  = 1 + pulseBoost * 2.5;
+
+        if (!n.album) {
+          // Hub node — elevated presence
+          p.drawingContext.shadowBlur  = 18 * gb;
+          p.drawingContext.shadowColor = `rgba(${r},${gr},${b},${0.7 * gb})`;
+          p.noStroke();
+          p.fill(r, gr, b, 18 * a * gb); p.circle(n.x, n.y, sz * 2 + 22);
+          p.fill(r, gr, b, 45 * a * gb); p.circle(n.x, n.y, sz * 2 + 9);
+          p.fill(r, gr, b, 65 * a * gb); p.circle(n.x, n.y, sz * 2 + 4);
+          p.strokeWeight(1.2); p.stroke(r, gr, b, 255 * a); p.fill(r, gr, b, 130 * a);
+          p.circle(n.x, n.y, sz * 2);
+          p.drawingContext.shadowBlur = 0;
+          continue;
+        }
+
+        p.drawingContext.shadowBlur  = 8 * gb * d;
+        p.drawingContext.shadowColor = `rgba(${r},${gr},${b},${0.55 * gb})`;
+
+        if      (g.nodeShape === 'diamond') drawDiamond(n.x, n.y, sz, r, gr, b, a, gb);
+        else if (g.nodeShape === 'stack')   drawStack(n.x, n.y, sz, r, gr, b, a, gb);
+        else                                drawCircleNode(n.x, n.y, sz, r, gr, b, a, gb);
+      }
+    }
+    p.drawingContext.shadowBlur  = 0;
+    p.drawingContext.shadowColor = 'transparent';
+  }
+
+  function drawCircleNode(x, y, sz, r, g, b, a, gb) {
+    p.noStroke();
+    p.fill(r, g, b, 14 * a * gb); p.circle(x, y, sz * 2 + 22);
+    p.fill(r, g, b, 28 * a * gb); p.circle(x, y, sz * 2 + 12);
+    p.fill(r, g, b, 50 * a * gb); p.circle(x, y, sz * 2 + 5);
+    p.strokeWeight(1); p.stroke(r, g, b, 245 * a); p.fill(r, g, b, 155 * a);
+    p.circle(x, y, sz * 2);
+  }
+
+  function drawDiamond(x, y, sz, r, g, b, a, gb) {
+    const s = sz * 1.1;
+    p.noStroke();
+    p.fill(r, g, b, 18 * a * gb);
+    p.push(); p.translate(x, y); p.rotate(p.PI / 4); p.rect(-s - 9, -s - 9, (s + 9) * 2, (s + 9) * 2); p.pop();
+    p.fill(r, g, b, 40 * a * gb);
+    p.push(); p.translate(x, y); p.rotate(p.PI / 4); p.rect(-s - 3, -s - 3, (s + 3) * 2, (s + 3) * 2); p.pop();
+    p.strokeWeight(1); p.stroke(r, g, b, 245 * a); p.fill(r, g, b, 150 * a);
+    p.push(); p.translate(x, y); p.rotate(p.PI / 4); p.rect(-s, -s, s * 2, s * 2); p.pop();
+  }
+
+  function drawStack(x, y, sz, r, g, b, a, gb) {
+    const s = sz * 0.9;
+    p.noStroke(); p.fill(r, g, b, 20 * a * gb); p.circle(x, y, sz * 2 + 18);
+    const offs = [{ dx: -2.5, dy: 2.5, rot: -0.22 }, { dx: 0, dy: 0, rot: 0.06 }, { dx: 2.5, dy: -2.5, rot: 0.28 }];
+    for (const o of offs) {
+      p.push(); p.translate(x + o.dx, y + o.dy); p.rotate(o.rot);
+      p.strokeWeight(0.85); p.stroke(r, g, b, 230 * a); p.fill(r, g, b, 90 * a);
+      p.rect(-s, -s, s * 2, s * 2); p.pop();
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // INFO CARDS — scramble + genre strip
+  // ═══════════════════════════════════════
+
+  function updateInfoCards() {
+    for (const card of infoCards) card.age++;
+    infoCards = infoCards.filter(c => c.age < CARD_FADE * 2 + CARD_HOLD);
+    if (tick % CARD_SPAWN === 0 && infoCards.length < 3 && tick > 80)
+      spawnInfoCard();
+  }
+
+  function spawnInfoCard() {
+    for (let i = 0; i < 8; i++) {
+      const g  = GENRES[Math.floor(p.random(GENRES.length))];
+      const pd = plantData[g.id];
+      const available = pd.nodes.filter(n => n.album && n.prog > 0.85);
+      if (!available.length) continue;
+      const node = available[Math.floor(p.random(available.length))];
+      if (infoCards.some(c => c.node === node)) continue;
+      infoCards.push({ node, genre: g, age: 0 });
+      break;
+    }
+  }
+
+  function cardAlpha(card) {
+    const { age } = card;
+    if (age < CARD_FADE) return age / CARD_FADE;
+    if (age < CARD_FADE + CARD_HOLD) return 1;
+    return Math.max(0, 1 - (age - CARD_FADE - CARD_HOLD) / CARD_FADE);
+  }
+
+  function scramble(text, stability) {
+    let out = '';
+    for (const ch of text) {
+      if (ch === ' ') { out += ' '; continue; }
+      out += p.random() < stability ? ch : GLITCH[Math.floor(p.random(GLITCH.length))];
+    }
+    return out;
+  }
+
+  function drawInfoCards() {
+    const BOX_W = 148, LINE_H = 13, PAD = 7;
+    p.drawingContext.shadowBlur = 0;
+    for (const card of infoCards) {
+      const a = cardAlpha(card);
+      if (a <= 0) continue;
+      const { node: n, genre: g } = card;
+      const [r, gr, b] = g.color;
+      const stability = Math.min(1, card.age / 55);
+      const lines  = [n.album.artist, n.album.title, n.album.year + ' · ' + g.label];
+      const BOX_H  = lines.length * LINE_H + PAD * 2 + 4;
+
+      let bx = n.x + 14, by = n.y - BOX_H / 2;
+      if (bx + BOX_W > W - 8) bx = n.x - BOX_W - 14;
+      if (by < 8) by = 8;
+      if (by + BOX_H > H - 8) by = H - BOX_H - 8;
+
+      const ancX = (bx < n.x) ? bx + BOX_W : bx;
+
+      // Connector line
+      p.stroke(r, gr, b, 90 * a); p.strokeWeight(0.45);
+      p.line(n.x, n.y, ancX, by + BOX_H / 2);
+
+      // Shadow
+      p.noStroke(); p.fill(0, 0, 0, 70 * a); p.rect(bx + 2, by + 2, BOX_W, BOX_H);
+
+      // Box
+      p.stroke(r, gr, b, 110 * a); p.strokeWeight(0.6);
+      p.fill(0, 0, 0, 228 * a); p.rect(bx, by, BOX_W, BOX_H);
+
+      // Genre color strip — left edge
+      p.noStroke(); p.fill(r, gr, b, 165 * a);
+      p.rect(bx, by, 2, BOX_H);
+
+      // Text
+      p.textAlign(p.LEFT); p.textSize(8.5); p.noStroke();
+      const textAlpha = [240, 150, 80];
+      const colors    = [[r, gr, b], [255, 255, 255], [255, 255, 255]];
+      for (let i = 0; i < lines.length; i++) {
+        const txt = scramble(lines[i], stability);
+        p.fill(colors[i][0], colors[i][1], colors[i][2], textAlpha[i] * a);
+        p.text(txt, bx + PAD + 2, by + PAD + 10 + i * LINE_H);
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // LABELS — depth-scaled opacity
+  // ═══════════════════════════════════════
+
+  function drawLabels() {
+    p.textAlign(p.CENTER); p.noStroke();
+    p.drawingContext.shadowBlur = 0;
+    for (const g of GENRES) {
+      const pd = plantData[g.id];
+      if (!pd.branches.length || pd.branches[0].prog <= 0) continue;
+      const [r, gr, b] = g.color, a = pd.branches[0].prog, d = g.depth;
+      p.fill(r, gr, b, 175 * a * d); p.textSize(8.5);
+      p.text(g.label, g.px, g.py + 18);
+      p.fill(255, 255, 255, 45 * a * d); p.textSize(7.5);
+      p.text(g.albums.length + ' records', g.px, g.py + 29);
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // TITLE
+  // ═══════════════════════════════════════
+
+  function drawTitle() {
+    p.textAlign(p.LEFT); p.noStroke(); p.textSize(9);
+    p.fill(255, 255, 255, 18);
+    p.text('MIRÓ LABS  —  VINYL COLLECTION AS BOTANY', 22, 28);
+    p.fill(255, 255, 255, 9); p.textSize(7.5);
+    p.text('63 records · 7 genera · 10 cross-pollination links', 22, 42);
+  }
+
+  // ═══════════════════════════════════════
+  // RESIZE
+  // ═══════════════════════════════════════
+
+  p.windowResized = function() {
+    p.resizeCanvas(p.windowWidth, p.windowHeight);
+    W = p.width; H = p.height;
+    initParticles(); initFloatingDots(); buildLayout();
+    tick = 0; infoCards = []; pollenBursts = [];
+  };
+
+});
+</script>
+</body>
+</html>
